@@ -21,7 +21,8 @@ module Capistrano
       protected
   
         def any_match_applies?
-          Array(conditions[:any_match] || conditions[:watchlist]).any? do |watched| 
+          return true unless conditions[:any_match]
+          Array(conditions[:any_match]).any? do |watched| 
             @changed.any? { |path| path[watched] }
           end
         end

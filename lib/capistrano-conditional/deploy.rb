@@ -3,6 +3,7 @@ class ConditionalDeploy
   @@conditionals = []
 
   def self.register(name, opts, &block)
+    raise("Already added a conditional with that name") if @@conditionals.any?{|c| c.name == name}
     @@conditionals << Capistrano::Conditional::Unit.new(name, opts, block)
   end
 
