@@ -45,6 +45,8 @@ class ConditionalDeploy
     end
     
     log
+    log "  Conditional Deployment Report:", Capistrano::Logger::IMPORTANT
+    log
     log "\tLast deployed commit: #{@last_deployed.message}"
     log
     log "\tFiles Modified:"
