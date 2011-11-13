@@ -31,6 +31,7 @@ class ConditionalDeploy
   end
 
   def ensure_local_up_to_date
+    return true if ENV['ALLOW_OUTDATED']
     s = @git.status
     no_changes = %w(changed added deleted).all? { |attrib| s.send(attrib).empty? }
 
@@ -45,14 +46,14 @@ class ConditionalDeploy
     end
     
     log
-    log "  Conditional Deployment Report:", Capistrano::Logger::IMPORTANT
+    log "Conditional Deployment Report:", Capistrano::Logger::IMPORTANT
     log
-    log "\tLast deployed commit: #{@last_deployed.message}", Capistrano::Logger::INFO
+    log "\tLast deployed commit: #{@last_deployed.message}", Capistrano::Logger::DEBUG
     log
-    log "\tFiles Modified:", Capistrano::Logger::INFO
+    log "\tFiles Modified:", Capistrano::Logger::DEBUG
     @changed.each {|f| log "\t\t- #{f}"}
     log
-    log "\tConditional Runlist:", Capistrano::Logger::INFO
+    log "\tConditional Runlist:", Capistrano::Logger::DEBUG
     if @to_run.empty?
       log "\t\t* No conditional tasks have been added"
     else
