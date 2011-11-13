@@ -32,7 +32,7 @@ class ConditionalDeploy
     no_changes = %w(changed added deleted).all? { |attrib| s.send(attrib).empty? }
 
     unless no_changes
-      abort "Your working copy contains local changes not yet committed to git. \nPlease commit all changes before deploying.\n\n"
+      abort "\nYour working copy contains local changes not yet committed to git. \nPlease commit all changes before deploying.\n\n"
     end
   end
 

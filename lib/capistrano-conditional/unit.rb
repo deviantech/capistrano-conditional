@@ -21,12 +21,12 @@ module Capistrano
       protected
   
         def watchlist_applies?
-          return true if conditions[:watchlist].blank?
+          return true if conditions[:watchlist].nil?
           matching_files_changed?(conditions[:watchlist])
         end
         
         def negative_watchlist_applies?
-          return true if conditions[:negative_watchlist].blank?
+          return true if conditions[:negative_watchlist].nil?
           !matching_files_changed?(conditions[:negative_watchlist])
         end
     
