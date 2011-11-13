@@ -3,7 +3,7 @@ class ConditionalDeploy
   @@conditionals = []
 
   def self.register(name, opts, &block)
-    @@conditionals << ConditionalUnit.new(name, opts, block)
+    @@conditionals << Capistrano::Conditional::Unit.new(name, opts, block)
   end
 
 
