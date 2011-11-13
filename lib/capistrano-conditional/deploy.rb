@@ -40,7 +40,7 @@ class ConditionalDeploy
   end
 
   def report_plan
-    def log(text)
+    def log(text = '')
       @logger.log(Capistrano::Logger::IMPORTANT, text, "Conditional")
     end
     
