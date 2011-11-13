@@ -1,5 +1,3 @@
-puts "Loading Unit"
-
 module Capistrano
   module Conditional
     class Unit
