@@ -15,19 +15,21 @@ module Capistrano
   
       def applies?(changed)
         @changed = changed
-        watchlist_applies? && negative_watchlist_applies? && if_applies? && unless_applies?
+        any_match_applies? && none_match_applies? && if_applies? && unless_applies?
       end  
 
       protected
   
-        def watchlist_applies?
-          return true if conditions[:watchlist].nil?
-          matching_files_changed?(conditions[:watchlist])
+        def any_match_applies?
+          Array(conditions[:any_match]).any? do |watched| 
+            @changed.any? { |path| path[watched] }
+          end
         end
         
-        def negative_watchlist_applies?
-          return true if conditions[:negative_watchlist].nil?
-          !matching_files_changed?(conditions[:negative_watchlist])
+        def none_match_applies?
+          Array(conditions[:none_match]).all? do |watched| 
+            !@changed.any? { |path| path[watched] }
+          end
         end
     
         def if_applies?
@@ -40,15 +42,6 @@ module Capistrano
           !condition_true?(:unless)
         end
         
-        
-        
-        def matching_files_changed?(watchlist)
-          Array(watchlist).any? do |watched| 
-            @changed.any? do |path| 
-              path[watched]
-            end
-          end
-        end
         
         def condition_true?(label)
           c = conditions[label]
