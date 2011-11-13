@@ -19,6 +19,9 @@ class ConditionalDeploy
 
 
   def initialize(compare_to = 'HEAD^')
+    @logger = Capistrano::Logger.new(:output => STDOUT)
+    @logger.level = Capistrano::Logger::MAX_LEVEL
+    
     @verbose = true
     @git = Git.open('.')
     @last_deployed = @git.object(compare_to)
@@ -37,23 +40,26 @@ class ConditionalDeploy
   end
 
   def report_plan
-    puts "\n" * 3
-    puts "Conditional Deployment:"
-    puts "\tLast deployed commit: #{@last_deployed.message}"
-    puts
-    puts "\tFiles Modified:"
-    @changed.each {|f| puts "\t\t- #{f}"}
-    puts
-    puts "\tConditional Runlist:"
+    def log(text)
+      @logger.log(Capistrano::Logger::IMPORTANT, text, "Conditional")
+    end
+    
+    log
+    log "\tLast deployed commit: #{@last_deployed.message}"
+    log
+    log "\tFiles Modified:"
+    @changed.each {|f| log "\t\t- #{f}"}
+    log
+    log "\tConditional Runlist:"
     if @to_run.empty?
-      puts "\t\t* No conditional tasks have been added"
+      log "\t\t* No conditional tasks have been added"
     else
       @to_run.each do |job|
         out = job.message ? "#{job.name} (#{job.message})" : job.name
-        puts "\t\t* Running #{out}"
+        log "\t\t* Running #{out}"
       end
     end
-    puts "\n" * 3
+    log
   end
 
   def run_conditionals
