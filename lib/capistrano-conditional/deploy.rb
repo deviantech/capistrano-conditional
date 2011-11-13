@@ -49,7 +49,8 @@ class ConditionalDeploy
       puts "\t\t* No conditional tasks have been added"
     else
       @to_run.each do |job|
-        puts "\t\t* Running #{job.name}"
+        out = job.message ? "#{job.name} (#{job.message})" : job.name
+        puts "\t\t* Running #{out}"
       end
     end
     puts "\n" * 3
