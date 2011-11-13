@@ -11,9 +11,9 @@ class ConditionalDeploy
   def self.apply_conditions!(deployed)
     conditional = self.new(deployed)
     conditional.ensure_local_up_to_date
-    conditional.run_conditionals
+    conditional.screen_conditionals
     conditional.report_plan
-
+    conditional.run_conditionals
     abort "Done"
   end
 
@@ -66,11 +66,17 @@ class ConditionalDeploy
     log
   end
 
-  def run_conditionals
+  def screen_conditionals
     @@conditionals.each do |job|
       force = job.name && ENV["RUN_#{job.name.to_s.upcase}"]
       next unless force || job.applies?(@changed)
       @to_run << job
     end
-  end  
+  end
+  
+  def run_conditionals
+    @to_run.each do |job|
+      job.block.call
+    end
+  end
 end
