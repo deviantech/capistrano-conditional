@@ -8,9 +8,7 @@ Capistrano::Configuration.instance(:must_exist).load do
     desc "Initializes the conditional deployment functionality"
     task :apply do
       log = capture("cd #{current_path} && git log --format=oneline -n 1", :pty => false)
-      hash = log.split[0]
-      puts "\nLast deployed git commit: #{log.gsub(hash, '')}\n"
-      ConditionalDeploy.apply_conditions!(hash)
+      ConditionalDeploy.apply_conditions!( log.split[0] )
     end
   end
 

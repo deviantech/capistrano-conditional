@@ -21,6 +21,7 @@ class ConditionalDeploy
   def initialize(compare_to = 'HEAD^')
     @verbose = true
     @git = Git.open('.')
+    @last_deployed = @git.object(compare_to)
     @diff = @git.diff('HEAD', compare_to)
     @changed = @diff.stats[:files].keys.sort
     @to_run = []
@@ -36,18 +37,19 @@ class ConditionalDeploy
   end
 
   def report_plan
-    if @verbose
-      puts "\n" * 3
-      puts "Conditional Deploy -- Files Modified:"
-      @changed.each {|f| puts "\t- #{f}"}
-    end
     puts "\n" * 3
-    puts "Conditional Deploy Plan:"
+    puts "Conditional Deployment:"
+    puts "\tLast deployed commit: #{@last_deployed.message}"
+    puts
+    puts "\tFiles Modified:"
+    @changed.each {|f| puts "\t\t- #{f}"}
+    puts
+    puts "\tConditional Runlist:"
     if @to_run.empty?
-      puts "\t* No conditional tasks have been added"
+      puts "\t\t* No conditional tasks have been added"
     else
       @to_run.each do |job|
-        puts "\t* Running #{job.name}"
+        puts "\t\t* Running #{job.name}"
       end
     end
     puts "\n" * 3
