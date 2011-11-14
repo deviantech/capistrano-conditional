@@ -12,6 +12,20 @@ class ConditionalDeploy
     @@conditionals << Capistrano::Conditional::Unit.new(name, opts, block)
   end
 
+  def self.monitor_migrations(context)
+    if ARGV.any?{|v| v['deploy:migrations']} # If running deploy:migrations
+      # If there weren't any changes to migrations or the schema file, then abort the deploy
+      ConditionalDeploy.register :unneeded_migrations, :none_match => ['db/schema.rb', 'db/migrate'] do
+        context.abort "You're running migrations, but it doesn't look like you need to!"
+      end
+    else # If NOT running deploy:migrations
+      # If there were changes to migration files, run migrations as part of the deployment
+      ConditionalDeploy.register :forgotten_migrations, :any_match => ['db/schema.rb', 'db/migrate'], :msg => "Forgot to run migrations? It's cool, we'll do it for you." do
+        context.after "deploy:update_code", "deploy:migrate"
+      end  
+    end    
+  end
+
   def self.apply_conditions!(deployed)
     conditional = self.new(deployed)
     conditional.ensure_local_up_to_date
