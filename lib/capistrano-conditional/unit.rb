@@ -1,5 +1,11 @@
 module Capistrano
   module Conditional
+    # Stores the actual conditionals added by the user, including under
+    # what conditions the conditional should be applied (<em>conditions</em>)
+    # and what to do if that's the case (<em>block</em>).
+    #
+    # Created from <em>ConditionalDeploy.register</em>, the end user should
+    # never need to interact with it directly.
     class Unit
       attr_accessor :name, :message, :conditions, :block
 
@@ -12,7 +18,8 @@ module Capistrano
           @conditions[k] = v
         end
       end
-  
+
+      # Currently supported options: any_match (aliased to watchlist), none_match, if, unless
       def applies?(changed)
         @changed = changed
         any_match_applies? && none_match_applies? && if_applies? && unless_applies?
@@ -21,10 +28,7 @@ module Capistrano
       protected
   
         def any_match_applies?
-          return true unless conditions[:any_match]
-          Array(conditions[:any_match]).any? do |watched| 
-            @changed.any? { |path| path[watched] }
-          end
+          any_files_match?(:any_match) && any_files_match?(:watchlist)
         end
         
         def none_match_applies?
@@ -43,6 +47,14 @@ module Capistrano
           !condition_true?(:unless)
         end
         
+        
+        
+        def any_files_match?(key)
+          return true unless conditions[key]
+          Array(conditions[key]).any? do |watched| 
+            @changed.any? { |path| path[watched] }
+          end
+        end
         
         def condition_true?(label)
           c = conditions[label]

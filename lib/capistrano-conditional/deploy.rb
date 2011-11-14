@@ -1,3 +1,8 @@
+# This class handles the logic associated with checking if each conditional
+# statement applies to a given deploy and, if so, applying them.
+#
+# The only publicly-useful method is <em>ConditionalDeploy.register</em>, which
+# is used in deploy.rb to add conditional elements (see README for details).
 class ConditionalDeploy
 
   @@conditionals = []

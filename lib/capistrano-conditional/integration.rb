@@ -1,4 +1,3 @@
-
 Capistrano::Configuration.instance(:must_exist).load do
   abort "\ncapistrano-conditional is not compatible with Capistrano 1.x\n" unless respond_to?(:namespace)
   abort "\nGit is not defined (are you in a git repository, with the Git gem installed?)\n" unless defined?(Git)
@@ -11,6 +10,7 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
   end
 
+  # Ensure deploys apply conditional elements before running the rest of the tasks
   before 'deploy', 'conditional:apply'
   before 'deploy:migrations', 'conditional:apply'
 end
