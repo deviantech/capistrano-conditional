@@ -8,7 +8,7 @@ Gem::Specification.new do |s|
   s.authors     = ["Kali Donovan"]
   s.email       = ["kali@deviantech.com"]
   s.homepage    = ""
-  s.summary     = %q{Adds support for conditional deployment tasks}
+  s.summary     = %q{Adds support for conditional deployment tasks in capistrano}
   s.description = %q{Allows making tasks for git-based projects conditional based on the specific files to be deployed.}
 
   s.rubyforge_project = "capistrano-conditional"
