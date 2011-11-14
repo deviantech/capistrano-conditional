@@ -50,7 +50,7 @@ class ConditionalDeploy
   end
 
   def ensure_local_up_to_date
-    return true if ENV['ALLOW_UNCOMMITED']
+    return true if ENV['ALLOW_UNCOMMITTED']
     s = @git.status
     no_changes = %w(changed added deleted).all? { |attrib| s.send(attrib).empty? }
 
