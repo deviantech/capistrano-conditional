@@ -32,7 +32,6 @@ class ConditionalDeploy
     conditional.screen_conditionals
     conditional.report_plan
     conditional.run_conditionals
-    abort "Done"
   end
 
 
