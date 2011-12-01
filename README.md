@@ -83,7 +83,7 @@ I've got <code>cap deploy</code> in muscle memory, and I used to find myself for
       end  
     end
 
-Since I use it on ever project, I've wrapped that logic up in a single command:
+Since I use it on every project, I've wrapped that logic up in a single command:
 
     ConditionalDeploy.monitor_migrations(self)
   
