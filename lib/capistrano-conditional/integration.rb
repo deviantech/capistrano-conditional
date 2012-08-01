@@ -10,7 +10,7 @@ Capistrano::Configuration.instance(:must_exist).load do
   namespace :conditional do
     desc "Initializes the conditional deployment functionality"
     task :apply do
-      deployed_hash = capture("cd #{current_path} && git log --format=oneline -n 1", :pty => false).split[0]
+      deployed_hash = capture("cat #{current_path}/REVISION").strip
       ConditionalDeploy.apply_conditions!( deployed_hash )
     end
     
