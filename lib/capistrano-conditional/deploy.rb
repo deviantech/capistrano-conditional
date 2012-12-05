@@ -86,7 +86,9 @@ class ConditionalDeploy
   def screen_conditionals
     @@conditionals.each do |job|
       force = job.name && ENV["RUN_#{job.name.to_s.upcase}"]
+      skip  = job.name && ENV["SKIP_#{job.name.to_s.upcase}"]
       next unless force || job.applies?(@changed)
+      next if skip
       @to_run << job
     end
   end

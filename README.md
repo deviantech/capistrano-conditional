@@ -91,7 +91,7 @@ Since I use it on every project, I've wrapped that logic up in a single command:
 
 By default <code>capistrano-conditional</code> will abort the deployment if you have uncommited changes in your working directory.  You can skip this check on an individual run by setting the ALLOW_UNCOMMITED environment variable (e.g. <code>cap deploy ALLOW_UNCOMMITTED=1</code>).
 
-If you need to force a particular conditional to run, you can also do that via the environment.  Given the examples above, if you want to run the conditional named <code>whenever</code> even though config/schedule.rb hasn't been changed, just run <code>code deploy RUN_WHENEVER=1</code>.
+If you need to force a particular conditional to run, you can also do that via the environment.  Given the examples above, if you want to run the conditional named <code>whenever</code> even though config/schedule.rb hasn't been changed, just run <code>cap deploy RUN_WHENEVER=1</code>. Similarly, if you needed to skip the <code>whenever</code> conditional which would otherwise be run, you can use <code>cap deploy SKIP_WHENEVER=1</code>.
 
 ## License
 
