@@ -1,4 +1,9 @@
 Capistrano::Configuration.instance(:must_exist).load do
+  log_formatter([
+    { :match => /^Conditional$/, :color => :cyan, :style => :dim, :priority => 10 }
+  ])
+  
+  
   abort "\ncapistrano-conditional is not compatible with Capistrano 1.x\n" unless respond_to?(:namespace)
   abort "\nGit is not defined (are you in a git repository, with the Git gem installed?)\n" unless defined?(Git)
 

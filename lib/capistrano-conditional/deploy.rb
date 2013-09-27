@@ -64,14 +64,14 @@ class ConditionalDeploy
     end
     
     log
-    log "Conditional Deployment Report:", Capistrano::Logger::IMPORTANT
+    log "Conditional Deployment Report:"
     log
-    log "\tLast deployed commit: #{@last_deployed.message}", Capistrano::Logger::DEBUG
+    log "\tLast deployed commit: #{@last_deployed.message}"
     log
-    log "\tFiles Modified:", Capistrano::Logger::DEBUG
+    log "\tFiles Modified:"
     @changed.each {|f| log "\t\t- #{f}"}
     log
-    log "\tConditional Runlist:", Capistrano::Logger::DEBUG
+    log "\tConditional Runlist:"
     if @to_run.empty?
       log "\t\t* No conditional tasks have been added"
     else

@@ -47,8 +47,6 @@ module Capistrano
           !condition_true?(:unless)
         end
         
-        
-        
         def any_files_match?(key)
           return true unless conditions[key]
           Array(conditions[key]).any? do |watched| 
