@@ -2,6 +2,8 @@
 
 This gem extends capistrano deployments to allow certain tasks to only be run under certain conditions -- i.e. conditionally.
 
+It hasn't yet been extended to work with Capistrano 3; pull requests welcomed!
+
 ## Installation
 
 Add to your Gemfile:
@@ -47,27 +49,52 @@ If you need more custom control, <code>:if</code> and <code>:unless</code> expec
 
 ## Example Usage
 
+These snippets go in <code>config/deploy.rb</code> or any other file that gets loaded via capistrano.
+
+### A random collection of examples:
+
+#### Using [whenever](https://github.com/javan/whenever)
+
+Only run the rake task to update the crontab if the schedule has changed:
+
     ConditionalDeploy.register :whenever, :watchlist => 'config/schedule.rb' do
       after "deploy:symlink", "deploy:update_crontab"
     end
 
-    ConditionalDeploy.register :sphinx, :watchlist => ['db/schema.rb', 'db/migrate'] do
+#### Using [thinking-sphinx](https://github.com/pat/thinking-sphinx)
+
+Only restart the sphinx daemon if our database or schema has changed. Otherwise, just copy the generated sphinx config from the previous release:
+
+    SPHINX_WATCHLIST = ['db/schema.rb', 'db/migrate', 'sphinx.yml', 'app/indices']
+    
+    ConditionalDeploy.register :sphinx, :watchlist => SPHINX_WATCHLIST do
       before "deploy:update_code",  "thinking_sphinx:stop"
       before "deploy:start",        "thinking_sphinx:start"
       before "deploy:restart",      "thinking_sphinx:start"
     end
+    
+    ConditionalDeploy.register :no_sphinx, :none_match => SPHINX_WATCHLIST do
+      after "deploy:update_code", "sphinx:copy_config"
+    end
+    
+    namespace :sphinx do
+      desc 'Copy the config file from previous release, if available, or else rerun configuration'
+      task :copy_config, :roles => :app do
+        run "([ -f #{current_path}/config/#{stage}.sphinx.conf ] && cp #{current_path}/config/#{stage}.sphinx.conf #{release_path}/config/#{stage}.sphinx.conf) || true"
+        run "[ -f #{release_path}/config/#{stage}.sphinx.conf ] || (cd #{release_path} && bundle exec rake ts:config RAILS_ENV=#{stage})"
+      end
+    end
+
+
+#### Using [jammit](https://github.com/documentcloud/jammit)
+
+For pre-asset-pipeline versions of Rails, this snippet will reprocess your assets with [jammit](https://github.com/documentcloud/jammit) only if necessary:
 
     ConditionalDeploy.register :jammit, :watchlist => ['public/images/embed', 'public/stylesheets', 'public/javascripts', 'public/assets', 'config/assets.yml'] do
       after 'deploy:symlink', 'deploy:rebuild_assets'
     end
 
-    # Restart the resque workers unless the only changes were to static assets, views, or controllers.
-    ConditionalDeploy.register(:resque, :unless => lambda { |changed| changed.all?{|f| f['public/'] || f['app/controllers/'] || f['app/views/'] } }) do
-      before "deploy:restart", "resque:workers:restart"
-    end
-    
-    # ... note that you still have to actually DEFINE the tasks laid out above (e.g. deploy:update_crontab)
-    
+#### Migrations
 
 I've got <code>cap deploy</code> in muscle memory, and I used to find myself forgetting to run <code>cap deploy:migrations</code> until after I tested the new changes and found staging wasn't working right.  I now add the following code to my apps, so I never have to worry about it again:
     
@@ -95,5 +122,4 @@ If you need to force a particular conditional to run, you can also do that via t
 
 ## License
 
-Copyright &copy; 2011 [Deviantech, Inc.](http://www.deviantech.com) and released under the MIT license.
-
+Copyright &copy; 2013 [Deviantech, Inc.](http://www.deviantech.com) and released under the MIT license.

@@ -7,7 +7,7 @@ Gem::Specification.new do |s|
   s.version     = Capistrano::Conditional::VERSION
   s.authors     = ["Kali Donovan"]
   s.email       = ["kali@deviantech.com"]
-  s.homepage    = ""
+  s.homepage    = "https://github.com/deviantech/capistrano-conditional"
   s.summary     = %q{Adds support for conditional deployment tasks in capistrano}
   s.description = %q{Allows making tasks for git-based projects conditional based on the specific files to be deployed.}
 
@@ -21,5 +21,5 @@ Gem::Specification.new do |s|
   # specify any dependencies here; for example:
   # s.add_development_dependency "rspec"
   s.add_runtime_dependency "git"
-  s.add_runtime_dependency "capistrano"
+  s.add_runtime_dependency "capistrano", '~> 2.5'
 end
