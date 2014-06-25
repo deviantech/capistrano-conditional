@@ -12,6 +12,10 @@ class ConditionalDeploy
     @@conditionals << Capistrano::Conditional::Unit.new(name, opts, block)
   end
 
+  def self.configure
+    yield self
+  end
+
   def self.monitor_migrations(context)
     if ARGV.any?{|v| v['deploy:migrations']} # If running deploy:migrations
       # If there weren't any changes to migrations or the schema file, then abort the deploy
@@ -22,80 +26,109 @@ class ConditionalDeploy
       # If there were changes to migration files, run migrations as part of the deployment
       ConditionalDeploy.register :forgotten_migrations, :any_match => ['db/schema.rb', 'db/migrate'], :msg => "Forgot to run migrations? It's cool, we'll do it for you." do
         context.after "deploy:update_code", "deploy:migrate"
-      end  
-    end    
-  end
-
-  def self.apply_conditions!(deployed)
-    conditional = self.new(deployed)
-    conditional.ensure_local_up_to_date
-    conditional.screen_conditionals
-    conditional.report_plan
-    conditional.run_conditionals
-  end
-
-
-
-  def initialize(compare_to = 'HEAD^')
-    @logger = Capistrano::Logger.new(:output => STDOUT)
-    @logger.level = Capistrano::Logger::MAX_LEVEL
-    
-    @verbose = true
-    @git = Git.open('.')
-    @last_deployed = @git.object(compare_to)
-    @diff = @git.diff('HEAD', compare_to)
-    @changed = @diff.stats[:files].keys.sort
-    @to_run = []
-  end
-
-  def ensure_local_up_to_date
-    return true if ENV['ALLOW_UNCOMMITTED']
-    s = @git.status
-    no_changes = %w(changed added deleted).all? { |attrib| s.send(attrib).empty? }
-
-    unless no_changes
-      abort "\nYour working copy contains local changes not yet committed to git. \nPlease commit all changes before deploying.\n\n"
-    end
-  end
-
-  def report_plan
-    def log(text = "\n", level = Capistrano::Logger::TRACE)
-      @logger.log(level, text, "Conditional")
-    end
-    
-    log
-    log "Conditional Deployment Report:"
-    log
-    log "\tLast deployed commit: #{@last_deployed.message}"
-    log
-    log "\tFiles Modified:"
-    @changed.each {|f| log "\t\t- #{f}"}
-    log
-    log "\tConditional Runlist:"
-    if @to_run.empty?
-      log "\t\t* No conditional tasks have been added"
-    else
-      @to_run.each do |job|
-        out = job.message ? "#{job.name} (#{job.message})" : job.name
-        log "\t\t* Running #{out}"
       end
     end
-    log
   end
 
-  def screen_conditionals
-    @@conditionals.each do |job|
-      force = job.name && ENV["RUN_#{job.name.to_s.upcase}"]
-      skip  = job.name && ENV["SKIP_#{job.name.to_s.upcase}"]
-      next unless force || job.applies?(@changed)
-      next if skip
-      @to_run << job
-    end
+  def initialize(current, deploying)
+    @logger = Capistrano::Logger.new(:output => STDOUT)
+    @logger.level = Capistrano::Logger::MAX_LEVEL
+
+    @verbose = true
+    @git       = Git.open('.')
+    @working   = get_object 'HEAD'
+    @current   = get_object current, 'currently deployed'
+    @deploying = get_object deploying, 'about to be deployed'
+
+    @diff    = @git.diff(current, deploying)
+    @changed = @diff.stats[:files].keys.compact.sort
+    @to_run  = []
   end
-  
-  def run_conditionals
-    @to_run.each do |job|
-      job.block.call
-    end
+
+  def apply_conditions!
+    screen_conditionals
+    report_plan
+    run_conditionals
   end
+
+  protected
+
+    def get_object(name, desc=nil)
+      @git.object(name)
+    rescue Git::GitExecuteError => e
+      msg = desc ? "(#{desc}) #{name}" : name
+      abort "Unable to find git object for #{msg}. Is your local repository up to date?\n\n"
+    end
+
+    def report_plan
+      @plan = []
+      set_report_header
+      set_report_files
+      set_report_runlist
+      log_plan @plan
+    end
+
+    def screen_conditionals
+      @@conditionals.each do |job|
+        force = job.name && ENV["RUN_#{job.name.to_s.upcase}"]
+        skip  = job.name && ENV["SKIP_#{job.name.to_s.upcase}"]
+        next unless force || job.applies?(@changed)
+        next if skip
+        @to_run << job
+      end
+    end
+
+    def run_conditionals
+      @to_run.each do |job|
+        job.block.call
+      end
+    end
+
+    def set_report_header
+      @plan << ''
+      @plan << 'Conditional Deployment Report:'
+      @plan << ''
+      @plan << "\tCurrently deployed:  #{commit_details @current}"
+      @git.log.between(@current, @deploying).each{|l| @plan << "\t\t* #{commit_details l}"}
+      @plan << "\tPreparing to deploy: #{commit_details @deploying}"
+      @plan << ''
+    end
+
+    def set_report_files
+      if @changed.length == 0
+        @plan << "\tNo files were modified."
+      else
+        @plan << "\tFiles Modified:"
+        @changed.each do |file|
+          @plan << "\t\t- #{file}"
+        end
+      end
+      @plan << ''
+    end
+
+    def set_report_runlist
+      @plan << "\tConditional Runlist:"
+      @plan << ''
+      if @to_run.empty?
+        @plan << "\t\t* No conditional tasks have been added"
+      else
+        @to_run.each do |job|
+          out = job.message ? "#{job.name} (#{job.message})" : job.name
+          @plan << "\t\t* Running #{out}"
+        end
+      end
+      @plan << ''
+    end
+
+    def commit_details(c)
+      # extra = "(#{c.author.name} at #{c.date.strftime("%H:%M %Z on %B %e")})"
+      "#{c.sha} #{c.message.split("\n").first}"
+    end
+
+    def log_plan(lines = "\n", level = Capistrano::Logger::TRACE)
+      Array(lines).each do |line|
+        @logger.log(level, ': ' + line, "Conditional")
+      end
+    end
+
 end

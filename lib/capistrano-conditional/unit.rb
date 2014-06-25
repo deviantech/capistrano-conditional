@@ -59,7 +59,7 @@ module Capistrano
           case c.arity
           when 0 then c.call
           when 1 then c.call(@changed)
-          else 2 
+          else
             c.call(@changed, @git)
           end
         end 
