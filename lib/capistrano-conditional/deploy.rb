@@ -12,29 +12,27 @@ class ConditionalDeploy
     @@conditionals << Capistrano::Conditional::Unit.new(name, opts, block)
   end
 
-  def self.configure
-    yield self
-  end
+  def skip_task(name, opts={})
+    method = opts[:clear_hooks] ? :clear : :clear_actions
+    msg = opts[:message] || "Skipping #{name} as preconditions to require it were not met"
 
-  def self.monitor_migrations(context)
-    if ARGV.any?{|v| v['deploy:migrations']} # If running deploy:migrations
-      # If there weren't any changes to migrations or the schema file, then abort the deploy
-      ConditionalDeploy.register :unneeded_migrations, :none_match => ['db/schema.rb', 'db/migrate'] do
-        context.send :abort, "You're running migrations, but it doesn't look like you need to!"
-      end
-    else # If NOT running deploy:migrations
-      # If there were changes to migration files, run migrations as part of the deployment
-      ConditionalDeploy.register :forgotten_migrations, :any_match => ['db/schema.rb', 'db/migrate'], :msg => "Forgot to run migrations? It's cool, we'll do it for you." do
-        context.after "deploy:update_code", "deploy:migrate"
-      end
+    Rake::Task[name] && Rake::Task[name].send(method)
+
+    # Need to create stub for method in case called from
+    @@deploy_context.send(:task, name) do
+      puts msg.cyan unless opts[:silent]
     end
   end
 
-  def initialize(current, deploying)
-    @logger = Capistrano::Logger.new(:output => STDOUT)
-    @logger.level = Capistrano::Logger::MAX_LEVEL
+  def self.configure(context)
+    @@deploy_context = context
+    yield self
+  end
 
-    @verbose = true
+  def initialize(context, current, deploying)
+    @context = context
+    @log_method = :info # TODO: make this configurable
+
     @git       = Git.open('.')
     @working   = get_object 'HEAD'
     @current   = get_object current, 'currently deployed'
@@ -65,7 +63,7 @@ class ConditionalDeploy
       set_report_header
       set_report_files
       set_report_runlist
-      log_plan @plan
+      log @plan
     end
 
     def screen_conditionals
@@ -80,7 +78,7 @@ class ConditionalDeploy
 
     def run_conditionals
       @to_run.each do |job|
-        job.block.call
+        job.block.call(self)
       end
     end
 
@@ -125,9 +123,9 @@ class ConditionalDeploy
       "#{c.sha} #{c.message.split("\n").first}"
     end
 
-    def log_plan(lines = "\n", level = Capistrano::Logger::TRACE)
+    def log(lines = "\n")
       Array(lines).each do |line|
-        @logger.log(level, ': ' + line, "Conditional")
+        @context.send @log_method, " [Conditional] #{line}"
       end
     end
 
