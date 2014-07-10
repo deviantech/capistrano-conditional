@@ -7,53 +7,66 @@ module Capistrano
     # Created from <em>ConditionalDeploy.register</em>, the end user should
     # never need to interact with it directly.
     class Unit
+      VALID_CONDITIONS = [:any_match, :none_match, :if, :unless, :watchlist]
+
       attr_accessor :name, :message, :conditions, :block
 
       def initialize(name, opts, block)
-        @name = name
-        @message = opts.delete(:msg)
-        @block = block
+        @name       = name
+        @message    = opts.delete(:msg)
+        @block      = block
         @conditions = {}
+        @options    = {}
+
         opts.each do |k,v|
-          @conditions[k] = v
+          if VALID_CONDITIONS.include?(k)
+            @conditions[k] = v
+          else
+            @options[k] = v
+          end
         end
       end
 
-      # Currently supported options: any_match (aliased to watchlist), none_match, if, unless
       def applies?(changed)
         @changed = changed
+        return default? if ConditionalDeploy.in_default_mode?
+
         any_match_applies? && none_match_applies? && if_applies? && unless_applies?
-      end  
+      end
+
+      def default?
+        !!@options[:default]
+      end
 
       protected
-  
+
         def any_match_applies?
           any_files_match?(:any_match) && any_files_match?(:watchlist)
         end
-        
+
         def none_match_applies?
-          Array(conditions[:none_match]).all? do |watched| 
+          Array(conditions[:none_match]).all? do |watched|
             !@changed.any? { |path| path[watched] }
           end
         end
-    
+
         def if_applies?
-          return true if conditions[:if].nil? 
+          return true if conditions[:if].nil?
           condition_true?(:if)
         end
-    
+
         def unless_applies?
           return true if conditions[:unless].nil?
           !condition_true?(:unless)
         end
-        
+
         def any_files_match?(key)
           return true unless conditions[key]
-          Array(conditions[key]).any? do |watched| 
+          Array(conditions[key]).any? do |watched|
             @changed.any? { |path| path[watched] }
           end
         end
-        
+
         def condition_true?(label)
           c = conditions[label]
           case c.arity
@@ -62,8 +75,8 @@ module Capistrano
           else
             c.call(@changed, @git)
           end
-        end 
-        
-    end 
+        end
+
+    end
   end
 end

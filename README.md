@@ -69,7 +69,6 @@ For instance, using [whenever](https://github.com/javan/whenever), to only run t
       end
     end
 
-
 ### Example Usage - Asset Precompilation
 
     ConditionalDeploy.configure(self) do |conditional|
@@ -94,6 +93,18 @@ For instance, using [whenever](https://github.com/javan/whenever), to only run t
 ## Advanced Usage
 
 If you need to force a particular conditional to run, you can do so via the environment.  Given the examples above, if you want to run the conditional named <code>whenever</code> even though config/schedule.rb hasn't been changed, just run <code>cap deploy RUN_WHENEVER=1</code>. Similarly, if you needed to skip the <code>whenever</code> conditional which would otherwise be run, you can use <code>cap deploy SKIP_WHENEVER=1</code>.
+
+### Handling rebases and other git failures
+
+Normal functioning of this library depends upon git being able to identify the currently deployed revision, the revision to be deployed, and the history between them.  With workflows that allow rebasing after branches have already been deployed (e.g. in staging environments), however, these requirements are often not met.  To work around this, you can specify certain tasks as default, to be run whenever capistrano conditional can't figure out the git history.  This allows you to have a fallback where a deploy may be less efficient, but will still go through regardless. For example, to default compiling assets locally even if we can't tell if any assets changed:
+
+    ConditionalDeploy.configure(self) do |conditional|
+      asset_paths = ['/assets', 'Gemfile.lock', 'config/environments']
+      conditional.register :local_asset_precompilation, none_match: asset_paths, default: true do |c|
+        # ... implementing code ...
+      end
+
+Note the addition of `default: true` to the `register` call.
 
 ### Setting branches
 

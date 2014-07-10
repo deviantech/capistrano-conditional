@@ -12,6 +12,10 @@ class ConditionalDeploy
     @@conditionals << Capistrano::Conditional::Unit.new(name, opts, block)
   end
 
+  def self.in_default_mode?
+    @@run_without_git_diff
+  end
+
   def skip_task(name, opts={})
     method = opts[:clear_hooks] ? :clear : :clear_actions
     msg = opts[:message] || "Skipping #{name} as preconditions to require it were not met"
@@ -32,15 +36,15 @@ class ConditionalDeploy
   def initialize(context, current, deploying)
     @context = context
     @log_method = :info # TODO: make this configurable
+    @to_run  = []
 
     @git       = Git.open('.')
-    @working   = get_object 'HEAD'
     @current   = get_object current, 'currently deployed'
     @deploying = get_object deploying, 'about to be deployed'
+    return if @@run_without_git_diff
 
     @diff    = @git.diff(current, deploying)
     @changed = @diff.stats[:files].keys.compact.sort
-    @to_run  = []
   end
 
   def apply_conditions!
@@ -55,14 +59,25 @@ class ConditionalDeploy
       @git.object(name)
     rescue Git::GitExecuteError => e
       msg = desc ? "(#{desc}) #{name}" : name
-      abort "Unable to find git object for #{msg}. Is your local repository up to date?\n\n"
+
+      if @@conditionals.any? {|job| job.default? }
+        warn "Unaable to find git object for #{msg}. Running with default jobs enabled."
+        @@run_without_git_diff = true
+      else
+        abort "Unable to find git object for #{msg}. Is your local repository up to date?\n\n"
+      end
     end
 
     def report_plan
       @plan = []
-      set_report_header
-      set_report_files
-      set_report_runlist
+      if @@run_without_git_diff
+        set_report_header_without_git
+        set_report_runlist
+      else
+        set_report_header
+        set_report_files
+        set_report_runlist
+      end
       log @plan
     end
 
@@ -70,7 +85,7 @@ class ConditionalDeploy
       @@conditionals.each do |job|
         force = job.name && ENV["RUN_#{job.name.to_s.upcase}"]
         skip  = job.name && ENV["SKIP_#{job.name.to_s.upcase}"]
-        next unless force || job.applies?(@changed)
+        next unless force || job.applies?(@changed) || (job.default?)
         next if skip
         @to_run << job
       end
@@ -80,6 +95,15 @@ class ConditionalDeploy
       @to_run.each do |job|
         job.block.call(self)
       end
+    end
+
+    def set_report_header_without_git
+      @plan << ''
+      @plan << 'Conditional Deployment Report:'
+      @plan << ''
+      @plan << "\tUNABLE TO IDENTIFY THE GIT HISTORY BETWEEN DEPLOYED AND DEPLOYING BRANCHES."
+      @plan << "\tFalling back to running only conditionals marked as :default"
+      @plan << ''
     end
 
     def set_report_header
