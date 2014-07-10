@@ -1,6 +1,6 @@
 # changelog
 
-## 0.2.1 -- July 9, 2014
+## 0.2.2 -- July 10, 2014
   * Added ability to specify default tasks in case git diff can't be found
 
 ## 0.2.0 -- July 1, 2014

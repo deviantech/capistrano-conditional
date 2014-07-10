@@ -6,6 +6,7 @@
 class ConditionalDeploy
 
   @@conditionals = []
+  @@run_without_git_diff = false
 
   def self.register(name, opts, &block)
     raise("Already added a conditional with that name") if @@conditionals.any?{|c| c.name == name}
