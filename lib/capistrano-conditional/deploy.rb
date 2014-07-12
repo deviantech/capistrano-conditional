@@ -62,7 +62,7 @@ class ConditionalDeploy
       msg = desc ? "(#{desc}) #{name}" : name
 
       if @@conditionals.any? {|job| job.default? }
-        warn "Unaable to find git object for #{msg}. Running with default jobs enabled."
+        warn "Unable to find git object for #{msg}. Running with default jobs enabled."
         @@run_without_git_diff = true
       else
         abort "Unable to find git object for #{msg}. Is your local repository up to date?\n\n"
@@ -86,7 +86,7 @@ class ConditionalDeploy
       @@conditionals.each do |job|
         force = job.name && ENV["RUN_#{job.name.to_s.upcase}"]
         skip  = job.name && ENV["SKIP_#{job.name.to_s.upcase}"]
-        next unless force || job.applies?(@changed) || (job.default?)
+        next unless force || job.applies?(@changed) || (@@run_without_git_diff && job.default?)
         next if skip
         @to_run << job
       end
