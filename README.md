@@ -100,11 +100,16 @@ Normal functioning of this library depends upon git being able to identify the c
 
     ConditionalDeploy.configure(self) do |conditional|
       asset_paths = ['/assets', 'Gemfile.lock', 'config/environments']
-      conditional.register :local_asset_precompilation, none_match: asset_paths, default: true do |c|
+      conditional.register :local_asset_precompilation, none_match: asset_paths, default: :run do |c|
         # ... implementing code ...
       end
 
-Note the addition of `default: true` to the `register` call.
+Note the addition of `default: :run` to the `register` call. `:default`
+can either be configured with `:run`, `:not_run` or `:abort` (default).
+If it set to `:abort`: The deployment process is aborted if the diff
+can't be obtained. If it set to `:run`, the registered block will be
+executed. If it set to `:not_run` (or anything else), the registered block won't be
+executed.
 
 ### Setting branches
 
