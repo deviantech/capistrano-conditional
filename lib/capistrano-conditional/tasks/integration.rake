@@ -8,7 +8,7 @@ namespace :conditional do
   desc "Initializes the conditional deployment functionality"
   task :apply do
     on primary(:app) do
-      currently_deployed = capture("cat #{current_path}/REVISION").strip
+      currently_deployed = capture("cat #{current_path}/REVISION").strip rescue nil
       @deploy = ConditionalDeploy.new(self, currently_deployed, fetch(:git_deploying))
       @deploy.apply_conditions!
     end
