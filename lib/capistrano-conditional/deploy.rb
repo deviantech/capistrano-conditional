@@ -39,7 +39,7 @@ class ConditionalDeploy
     @log_method = :info # TODO: make this configurable
     @to_run  = []
 
-    @git       = Git.open('.')
+    @git       = Git.open( find_git_root )
     @current   = get_object current, 'currently deployed'
     @deploying = get_object deploying, 'about to be deployed'
     return if @@run_without_git_diff
@@ -55,6 +55,13 @@ class ConditionalDeploy
   end
 
   protected
+    def find_git_root( pwd = Dir.getwd )
+      path = File.join( pwd, '.git' )
+      return pwd if Dir.exist?( path )
+      return nil if path == '/'
+
+      find_git_root( File.dirname( pwd ) )
+    end
 
     def get_object(name, desc=nil)
       @git.object(name)
