@@ -25,7 +25,8 @@ class ConditionalDeploy
 
     # Need to create stub for method in case called from
     @@deploy_context.send(:task, name) do
-      puts msg.cyan unless opts[:silent]
+      msg = msg.cyan if msg.respond_to?(:cyan)
+      puts msg unless opts[:silent]
     end
   end
 
