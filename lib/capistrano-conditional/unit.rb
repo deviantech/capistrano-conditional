@@ -29,13 +29,13 @@ module Capistrano
 
       def applies?(changed)
         @changed = changed
-        return default? if ConditionalDeploy.in_default_mode?
+        return default == 'run' if ConditionalDeploy.in_default_mode?
 
         any_match_applies? && none_match_applies? && if_applies? && unless_applies?
       end
 
-      def default?
-        !!@options[:default]
+      def default
+        (@options[:default] || :abort).to_s
       end
 
       protected

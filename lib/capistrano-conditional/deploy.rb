@@ -69,11 +69,11 @@ class ConditionalDeploy
     rescue Git::GitExecuteError => e
       msg = desc ? "(#{desc}) #{name}" : name
 
-      if @@conditionals.any? {|job| job.default? }
-        warn "Unable to find git object for #{msg}. Running with default jobs enabled."
-        @@run_without_git_diff = true
+      if @@conditionals.any? {|job| job.default == 'abort' }
+        abort "Unable to find git object for #{msg}. Abort execution"
       else
-        abort "Unable to find git object for #{msg}. Is your local repository up to date?\n\n"
+        warn "Unable to find git object for #{msg}. Jobs will be either run or not_run depend on default config."
+        @@run_without_git_diff = true
       end
     end
 
@@ -94,7 +94,7 @@ class ConditionalDeploy
       @@conditionals.each do |job|
         force = job.name && ENV["RUN_#{job.name.to_s.upcase}"]
         skip  = job.name && ENV["SKIP_#{job.name.to_s.upcase}"]
-        next unless force || job.applies?(@changed) || (@@run_without_git_diff && job.default?)
+        next unless force || job.applies?(@changed) || (@@run_without_git_diff && job.default == 'run')
         next if skip
         @to_run << job
       end
@@ -111,7 +111,7 @@ class ConditionalDeploy
       @plan << 'Conditional Deployment Report:'
       @plan << ''
       @plan << "\tUNABLE TO IDENTIFY THE GIT HISTORY BETWEEN DEPLOYED AND DEPLOYING BRANCHES."
-      @plan << "\tFalling back to running only conditionals marked as :default"
+      @plan << "\tFalling back to running only conditionals marked as :default => :run"
       @plan << ''
     end
 
